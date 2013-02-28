@@ -18,4 +18,16 @@ sidebar.on('change:color', function(model, color) {
 sidebar.set({color: 'white'});
 
 //call model's method
-sidebar.promptColor()
+$('#button-change-color').click(function() {
+	sidebar.promptColor();	
+});
+
+var collection = new Backbone.Collection([
+  {name: "Tim", age: 5},
+  {name: "Ida", age: 26},
+  {name: "Rob", age: 55}
+]);
+
+$('#button-show-collection').click(function() {
+	$('#content').html(JSON.stringify(collection));
+});
