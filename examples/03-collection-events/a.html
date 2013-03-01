@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Tut</title>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/underscore.js/1.4.3/underscore-min.js"></script>
+<script type="text/javascript" src="http://ajax.cdnjs.com/ajax/libs/backbone.js/0.9.10/backbone-min.js"></script>
+</head>
+<body>
+	<script type="text/template" id="add_template"> 
+		<label>Add:</label> 
+		<input type="text" name='name' /> 
+		<input type="text" name='age' /> 
+		<input type="text" name='city' /> 
+		<button class='button_add'>Add Customer</button> 
+	</script>
+
+	<script type="text/template" class="customer_template">
+		<label>name:</label> 
+		<strong><%= name %></strong>
+		<label>age:</label> 
+		<strong><%= age %></strong>
+		<label>city</label> 
+		<strong><%= city %></strong>
+		<button class="button_remove">Remove Me</button>
+	</script>
+
+	<div id='sidebar' style='width:20%;float:left'>.
+	</div>
+	<div id='content' style='width:80%;float:left'>
+		<h3>Add customer</h3>
+		<div id="add_container"></div>
+		<h3>Customers List</h3>
+		<div id="customers_container">
+			<ul class='customers'></ul>
+		</div>
+	</div>
+	<script type="text/javascript" src="a.js"></script>
+</body>
+</html>
