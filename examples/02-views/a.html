@@ -13,7 +13,7 @@
 		<input type="button" id="search_button" value="Search" /> 
 	</script>
 
-	<script type="text/template" id="customer_template"> 
+	<script type="text/template" class="customer_template">
 		<label>name:</label> 
 		<strong><%= name %></strong>
 		<label>age:</label> 
@@ -29,6 +29,10 @@
 		<div id="search_container"></div>
 		<h3>View rendered for customer John</h3>
 		<div id="john_container"></div>
+		<h3>View rendered for all customers</h3>
+		<div id="customers_container">
+			<ul class='customers'></ul>
+		</div>
 	</div>
 	<script type="text/javascript" src="a.js"></script>
 </body>
