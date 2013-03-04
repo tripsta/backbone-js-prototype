@@ -26,40 +26,9 @@ AddView = Backbone.View.extend({
       name : $('#new_name').val(),
       age : $('#new_age').val(),
       city : $('#new_city').val()});
-      window.originalCollection = this.collection.clone();
+      window.originalCollection.reset(this.collection.models);
   }
 }); 
-
-FilterCityView = Backbone.View.extend({
-  template : _.template( $(".filter_city_template").html()),
-  render: function() {
-    this.$el.html( this.template(this.model.toJSON())); 
-    return this;
-  }
-});
-
-FilterCityCollectionView = Backbone.View.extend({
-  initialize : function(){
-    this.collection.on('reset', this.render, this);
-    this.collection.on('remove', this.onCollectionChanged, this);
-    this.collection.on('add', this.onCollectionChanged, this);
-  },   
-  _renderOne: function (model) {
-      var v = new FilterCityView({
-        model : model,
-        tagName : 'li'
-      });
-      this.$el.append(v.render().el);
-  },  
-  render : function() {
-    $(this.el).empty();
-    this.collection.each(this._renderOne, this)
-  },
-  onCollectionChanged : function(model) {
-    this.render();
-  }  
-});
-  //- See more at: http://backbonetutorials.com/what-is-a-view/#sthash.7IW3AJSO.dpuf
 
 CustomerView = Backbone.View.extend({
   events: {
@@ -81,7 +50,7 @@ CustomerView = Backbone.View.extend({
 
 CustomerCollectionView = Backbone.View.extend({
   initialize : function(){
-    this.collection.on('reset', this.render, this);
+    this.collection.on('reset', this.onCollectionChanged, this);
     this.collection.on('remove', this.onCollectionChanged, this);
     this.collection.on('add', this.onCollectionChanged, this);
   }, 
@@ -98,75 +67,135 @@ CustomerCollectionView = Backbone.View.extend({
   },
   onCollectionChanged : function(model) {
     this.render();
-    filterCityCollection.reload(customerCollection);
     console.log('collection changed');
   }
 });
 
+
+FilterCityView = Backbone.View.extend({
+  template : _.template( $(".filter_city_template").html()),
+  render: function() {
+    this.$el.html( this.template(this.model.toJSON()));
+    return this;
+  }
+});
+
+FilterCityCollectionView = Backbone.View.extend({
+  initialize : function(){
+    this.listenTo(this.collection, 'filterCity::change', this.onCollectionChanged);
+  },
+  _renderOne: function (model) {
+      var v = new FilterCityView({
+        model : model,
+        tagName : 'li'
+      });
+      this.$el.append(v.render().el);
+  },
+  render : function() {
+    $(this.el).empty();
+    this.collection.each(this._renderOne, this)
+  },
+  onCollectionChanged : function(model) {
+    this.render();
+  }
+});
+
 CustomerCollection = Backbone.Collection.extend({
+  initialize: function() {
+    this.on('reset', this.onCollectionChanged, this);
+    this.on('remove', this.onCollectionChanged, this);
+    this.on('add', this.onCollectionChanged, this);
+  },
   filterByAge: function(min_age, max_age){
     filtered = this.filter(function(model){
       return model.get('age') >= min_age && model.get('age') <= max_age;
     });
     return filtered;
+  },
+  onCollectionChanged: function() {
+    this.trigger('customer_collection::onCollectionChanged', this);
   }
 
 });
-var customerCollection = new CustomerCollection;
 
-var customerCollectionView = new CustomerCollectionView({
-  collection : customerCollection,
-  el : $('ul.customers')[0]
+FilterAgeRange = Backbone.Model.extend({
+  initialize: function(collection) {
+    this.collection = collection;
+    this.collection.on('reset', this.render, this);
+  },
+  render: function() {
+    var min_age=originalCollection.min(function(model) {
+        return model.get("age")
+    }).get('age');
+    var max_age=originalCollection.max(function(model) {
+        return model.get("age")
+    }).get('age');
+    $( "#age_display_range" ).val( min_age + " - " + max_age );
+        $('#age_slider').slider({
+          range: true,
+          min: min_age,
+          max: max_age,
+          values: [min_age, max_age],
+          slide: function(event, ui) {
+            data = originalCollection.filterByAge(ui.values[0], ui.values[1]);
+            customerCollection.reset(data);
+            $( "#age_display_range" ).val( ui.values[ 0 ] + " - " + ui.values[ 1 ] );
+          }
+        });
+  },
 });
-var add_view = new AddView({ 
-  el: $("#add_container"),
-  collection : customerCollection
-}); 
-
-customerCollection.reset(customers_data);
-
-var originalCollection = customerCollection.clone();
-
-var min_age=originalCollection.min(function(model) {
-    return model.get("age")
-}).get('age');
-var max_age=originalCollection.max(function(model) {
-    return model.get("age")
-}).get('age');
-$( "#age_display_range" ).val( min_age + " - " + max_age );
-    $('#age_slider').slider({
-      range: true,
-      min: min_age,
-      max: max_age,
-      values: [min_age, max_age],
-      slide: function(event, ui) {
-        data = originalCollection.filterByAge(ui.values[0], ui.values[1]);
-        customerCollection.reset(data);
-        $( "#age_display_range" ).val( ui.values[ 0 ] + " - " + ui.values[ 1 ] );
-      }
-    });
-
 
 FilterCityCollection = Backbone.Collection.extend({
-  initialize : function() {
+  initialize : function(collection) {
+    this.collection = collection;
+    this.listenTo(this.collection, 'customer_collection::onCollectionChanged', this.onCollectionChanged, this.collection);
     that = this;
   },
-  reload: function(customerCollection) {
-    var cities = _.uniq(customerCollection.pluck('city'));
+  onCollectionChanged: function(collection) {
+    this.collection = collection;
+    this.reload();
+  },
+  reload: function() {
+    var cities = _.uniq(this.collection.pluck('city'));
     console.log(cities);
     that.reset();
     $.each(cities, function(index, value){
       that.push(new Backbone.Model({name: value}));
     });
+    this.trigger('filterCity::change');
   }
 });
 
-var filterCityCollection = new FilterCityCollection;
-filterCityCollection.reload(originalCollection);
+$('.reset_filters').click(function(){
+  console.log('clicked reset');
+  window.customerCollection.reset(customers_data);
+  window.filterAgeRange.render();
+  window.filterCityCollection.collection = originalCollection;
+});
+
+
+var customerCollection = new CustomerCollection;
+customerCollection.reset(customers_data);
+var originalCollection = customerCollection.clone();
+var filterCityCollection = new FilterCityCollection(originalCollection);
+filterCityCollection.reload();
+var filterAgeRange = new FilterAgeRange(originalCollection);
+filterAgeRange.render();
+
+var customerCollectionView = new CustomerCollectionView({
+  collection : customerCollection,
+  el : $('ul.customers')[0]
+});
+
+var add_view = new AddView({ 
+  el: $("#add_container"),
+  collection : customerCollection
+}); 
 
 var filterCityCollectionView = new FilterCityCollectionView({
   collection : filterCityCollection,
   el : $('ul.filter_cities')[0]
 });
 
+customerCollectionView.render();
 filterCityCollectionView.render();
