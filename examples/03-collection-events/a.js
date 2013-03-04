@@ -50,9 +50,7 @@ CustomerView = Backbone.View.extend({
 
 CustomerCollectionView = Backbone.View.extend({
   initialize : function(){
-    this.collection.on('reset', this.onCollectionChanged, this);
-    this.collection.on('remove', this.onCollectionChanged, this);
-    this.collection.on('add', this.onCollectionChanged, this);
+    this.listenTo(this.collection, 'customer_collection::onCollectionChanged', this.render);
   }, 
   _renderOne: function (model) {
       var v = new CustomerView({
@@ -64,10 +62,6 @@ CustomerCollectionView = Backbone.View.extend({
   render : function() {
     $(this.el).empty();
     this.collection.each(this._renderOne, this)
-  },
-  onCollectionChanged : function(model) {
-    this.render();
-    console.log('collection changed');
   }
 });
 
@@ -82,7 +76,7 @@ FilterCityView = Backbone.View.extend({
 
 FilterCityCollectionView = Backbone.View.extend({
   initialize : function(){
-    this.listenTo(this.collection, 'filterCity::change', this.onCollectionChanged);
+    this.listenTo(this.collection, 'filterCity::change', this.render);
   },
   _renderOne: function (model) {
       var v = new FilterCityView({
@@ -95,9 +89,6 @@ FilterCityCollectionView = Backbone.View.extend({
     $(this.el).empty();
     this.collection.each(this._renderOne, this)
   },
-  onCollectionChanged : function(model) {
-    this.render();
-  }
 });
 
 CustomerCollection = Backbone.Collection.extend({
@@ -106,10 +97,22 @@ CustomerCollection = Backbone.Collection.extend({
     this.on('remove', this.onCollectionChanged, this);
     this.on('add', this.onCollectionChanged, this);
   },
-  filterByAge: function(min_age, max_age){
-    filtered = this.filter(function(model){
-      return model.get('age') >= min_age && model.get('age') <= max_age;
-    });
+  filterByAge: null,
+  filterByCity: null,
+  applyFilters: function() {
+    var that = this;
+    currentCollection = this.clone();
+    filtered = currentCollection.models;
+    if (this.filterByAge) {
+      filtered = currentCollection.filter(function(model){
+        return model.get('age') >= that.filterByAge.min_age && model.get('age') <= that.filterByAge.max_age;
+      });
+    }
+    if (this.filterByCity) {
+      // filtered = currentCollection.filter(function(model){
+      //   return model.get('age') >= that.filterByAge.min_age && model.get('age') <= that.filterByAge.max_age;
+      // });
+    }
     return filtered;
   },
   onCollectionChanged: function() {
@@ -123,47 +126,51 @@ FilterAgeRange = Backbone.Model.extend({
     this.collection = collection;
     this.collection.on('reset', this.render, this);
   },
+  min_age: null,
+  max_age: null,
   render: function() {
-    var min_age=originalCollection.min(function(model) {
+    var that = this;
+    this.min_age=originalCollection.min(function(model) {
         return model.get("age")
     }).get('age');
-    var max_age=originalCollection.max(function(model) {
+    this.max_age=originalCollection.max(function(model) {
         return model.get("age")
     }).get('age');
-    $( "#age_display_range" ).val( min_age + " - " + max_age );
-        $('#age_slider').slider({
-          range: true,
-          min: min_age,
-          max: max_age,
-          values: [min_age, max_age],
-          slide: function(event, ui) {
-            data = originalCollection.filterByAge(ui.values[0], ui.values[1]);
-            customerCollection.reset(data);
-            $( "#age_display_range" ).val( ui.values[ 0 ] + " - " + ui.values[ 1 ] );
-          }
-        });
+    $('#age_slider').slider({
+      range: true,
+      min: that.min_age,
+      max: that.max_age,
+      values: [that.min_age, that.max_age],
+      slide: function(event, ui) {
+        that.min_age = ui.values[0];
+        that.max_age = ui.values[1];
+        data = originalCollection.applyFilters();
+        customerCollection.reset(data);
+        $( "#age_display_range" ).val( that.min_age + " - " + that.max_age );
+      }
+    });
+    $( "#age_display_range" ).val(that.min_age + " - " + that.max_age );    
   },
 });
 
 FilterCityCollection = Backbone.Collection.extend({
   initialize : function(collection) {
     this.collection = collection;
-    this.listenTo(this.collection, 'customer_collection::onCollectionChanged', this.onCollectionChanged, this.collection);
-    that = this;
+    this.listenTo(this.collection, 'customer_collection::onCollectionChanged', this.onCollectionChanged);
   },
-  onCollectionChanged: function(collection) {
-    this.collection = collection;
+  onCollectionChanged: function() {
     this.reload();
   },
   reload: function() {
     var cities = _.uniq(this.collection.pluck('city'));
     console.log(cities);
-    that.reset();
+    this.reset();
+    var that = this;
     $.each(cities, function(index, value){
       that.push(new Backbone.Model({name: value}));
     });
     this.trigger('filterCity::change');
-  }
+  },
 });
 
 $('.reset_filters').click(function(){
@@ -173,15 +180,23 @@ $('.reset_filters').click(function(){
   window.filterCityCollection.collection = originalCollection;
 });
 
+$('.reset_collection').click(function(){
+  console.log('clicked reset');
+  window.customerCollection.reset(customers_data);
+  window.originalCollection.reset(customers_data);
+});
+
 
 var customerCollection = new CustomerCollection;
 customerCollection.reset(customers_data);
 var originalCollection = customerCollection.clone();
 var filterCityCollection = new FilterCityCollection(originalCollection);
 filterCityCollection.reload();
-var filterAgeRange = new FilterAgeRange(originalCollection);
-filterAgeRange.render();
+window.filterAgeRange = new FilterAgeRange(originalCollection);
+window.filterAgeRange.render();
 
+originalCollection.filterByAge = window.filterAgeRange;
+originalCollection.filterByCity = filterCityCollection;
 var customerCollectionView = new CustomerCollectionView({
   collection : customerCollection,
   el : $('ul.customers')[0]

@@ -18,7 +18,7 @@
 		<button class='button_add'>Add Customer</button> 
 	</script>
 	<script type="text/template" class="filter_city_template"> 
-		<input name='city' type='checkbox' value='<%= name %>'><%= name %></input>
+		<input name='city' class='filter_city_item' type='checkbox' value='<%= name %>'><%= name %></input>
 	</script>
 
 	<script type="text/template" class="customer_template">
@@ -45,6 +45,9 @@
 		</div>
 		<div>
 			<button class='reset_filters'>reset filters</button>
+		</div>
+		<div>
+			<button class='reset_collection'>reset collection</button>
 		</div>
 	</div>
 	<div id='content' style='width:80%;float:left'>
