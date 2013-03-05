@@ -43,7 +43,6 @@ CustomerView = Backbone.View.extend({
     return this;
   },
   remove: function() {
-    console.log('removing model:' + JSON.stringify(this.model.toJSON()))
     this.model.destroy();
   }
 }); 
@@ -67,10 +66,16 @@ CustomerCollectionView = Backbone.View.extend({
 
 
 FilterCityView = Backbone.View.extend({
+  events: {
+    'change .filter_city_item' : 'onItemChanged'
+  },
   template : _.template( $(".filter_city_template").html()),
   render: function() {
     this.$el.html( this.template(this.model.toJSON()));
     return this;
+  },
+  onItemChanged: function(event) {
+    this.model.set('checked', event.target.checked);
   }
 });
 
@@ -88,6 +93,10 @@ FilterCityCollectionView = Backbone.View.extend({
   render : function() {
     $(this.el).empty();
     this.collection.each(this._renderOne, this)
+    var that = this;
+     $('.filter_city_item').change(function() {
+      that.trigger('cityChanged');
+    })
   },
 });
 
@@ -108,10 +117,12 @@ CustomerCollection = Backbone.Collection.extend({
         return model.get('age') >= that.filterByAge.min_age && model.get('age') <= that.filterByAge.max_age;
       });
     }
+    currentCollection.reset(filtered);
     if (this.filterByCity) {
-      // filtered = currentCollection.filter(function(model){
-      //   return model.get('age') >= that.filterByAge.min_age && model.get('age') <= that.filterByAge.max_age;
-      // });
+      var cities = _.map(this.filterByCity.filter(function(model){return model.get('checked') == true}), function(m) {return m.get('name')});
+      filtered = currentCollection.filter(function(model){
+        return ($.inArray(model.get('city'), cities) != -1);
+      });
     }
     return filtered;
   },
@@ -157,31 +168,33 @@ FilterCityCollection = Backbone.Collection.extend({
   initialize : function(collection) {
     this.collection = collection;
     this.listenTo(this.collection, 'customer_collection::onCollectionChanged', this.onCollectionChanged);
+    this.on('change', this.onCityItemChanged);
+  },
+  onCityItemChanged: function(model, options) {
+      data = originalCollection.applyFilters();
+      customerCollection.reset(data);
   },
   onCollectionChanged: function() {
     this.reload();
   },
   reload: function() {
     var cities = _.uniq(this.collection.pluck('city'));
-    console.log(cities);
     this.reset();
     var that = this;
     $.each(cities, function(index, value){
-      that.push(new Backbone.Model({name: value}));
+      that.add(new Backbone.Model({name: value, checked: true}), {silent: true});
     });
     this.trigger('filterCity::change');
   },
 });
 
 $('.reset_filters').click(function(){
-  console.log('clicked reset');
   window.customerCollection.reset(customers_data);
   window.filterAgeRange.render();
   window.filterCityCollection.collection = originalCollection;
 });
 
 $('.reset_collection').click(function(){
-  console.log('clicked reset');
   window.customerCollection.reset(customers_data);
   window.originalCollection.reset(customers_data);
 });
