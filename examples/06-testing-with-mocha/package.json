@@ -1,0 +1,12 @@
+{
+	"name": "bakcbone-js-prototype-test",
+	"version": "0.0.1",
+	"dependencies":
+	{
+		"zombie": "*",
+		"coffee-script": "*",
+		"express": "*",
+		"ejs": "*",
+		"mocha": "*"
+	}
+}
