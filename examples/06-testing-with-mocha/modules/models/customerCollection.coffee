@@ -23,7 +23,7 @@ define ->
         cities = _.map(@filterByCity.filter((model) ->
           model.get('checked') is true), (m) -> m.get('name'))
         filtered = currentCollection.filter (model) ->
-          ($.inArray(model.get('city'), cities) != -1)
+          (_.contains(cities, model.get('city')))
       filtered
     onCollectionChanged: ->
       @trigger 'customer_collection::onCollectionChanged', this

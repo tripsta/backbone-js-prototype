@@ -1,15 +1,16 @@
 define ->
 	FilterAgeRange = Backbone.Model.extend(
-	  initialize: (collection) ->
-	    @collection = collection
-	    @collection.on 'reset', @render, this
+	  initialize: (originalCollection, customerCollection) ->
+	    @originalCollection = originalCollection
+	    @customerCollection = customerCollection
+	    @originalCollection.on 'reset', @render, this
 	  min_age: null
 	  max_age: null
 	  render: ->
-	    @min_age = window.originalCollection.min((model) ->
+	    @min_age = @originalCollection.min((model) ->
 	        model.get("age")
 	    ).get('age')
-	    @max_age= window.originalCollection.max((model) ->
+	    @max_age= @originalCollection.max((model) ->
 	        model.get("age")
 	    ).get('age')
 	    $('#age_slider').slider(
@@ -20,8 +21,8 @@ define ->
 	      slide: (event, ui) =>
 	        @min_age = ui.values[0]
 	        @max_age = ui.values[1]
-	        data = window.originalCollection.applyFilters()
-	        window.customerCollection.reset(data)
+	        data = @originalCollection.applyFilters()
+	        @customerCollection.reset(data)
 	        $( "#age_display_range" ).val "#{@min_age} - #{@max_age}"
 	    )
 	    $( "#age_display_range" ).val "#{@min_age} - #{@max_age}"

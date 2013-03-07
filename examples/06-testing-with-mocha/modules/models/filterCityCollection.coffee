@@ -1,19 +1,20 @@
 define ->
   FilterCityCollection = Backbone.Collection.extend(
-    initialize : (collection) ->
-      @collection = collection
-      @listenTo(@collection, 'customer_collection::onCollectionChanged', @onCollectionChanged)
+    initialize : (originalCollection, customerCollection) ->
+      @originalCollection = originalCollection
+      @customerCollection = customerCollection
+      @originalCollection.on 'customer_collection::onCollectionChanged', @onCollectionChanged, this
       @on('change', @onCityItemChanged)
     onCityItemChanged: (model, options) ->
-        data = originalCollection.applyFilters()
-        window.customerCollection.reset(data)
+        data = @originalCollection.applyFilters()
+        @customerCollection.reset(data)
     onCollectionChanged: ->
       @reload()
     reload: ->
-      cities = _.uniq @collection.pluck('city')
+      cities = _.uniq @originalCollection.pluck('city')
       @reset()
-      $.each(cities, (index, value) =>
-        @add(new Backbone.Model(name: value, checked: true), silent: true)
+      _.each(cities, (city) =>
+        @add(new Backbone.Model(name: city, checked: true), silent: true)
       )
       @trigger 'filterCity::change'
   )

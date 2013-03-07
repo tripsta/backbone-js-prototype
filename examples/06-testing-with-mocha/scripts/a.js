@@ -2,7 +2,7 @@
 (function() {
 
   define(['cs!../modules/views/addView', 'cs!../modules/views/customerView', 'cs!../modules/views/customerCollectionView', 'cs!../modules/views/filterCityView', 'cs!../modules/views/filterCityCollectionView', 'cs!../modules/models/customerCollection', 'cs!../modules/models/filterAgeRange', 'cs!../modules/models/filterCityCollection'], function(AddView, CustomerView, CustomerCollectionView, FilterCityView, FilterCityCollectionView, CustomerCollection, FilterAgeRange, FilterCityCollection) {
-    var add_view, customerCollection, customerCollectionView, customers_data, filterCityCollection, filterCityCollectionView, originalCollection;
+    var add_view, customerCollectionView, customers_data, filterCityCollection, filterCityCollectionView;
     customers_data = [
       {
         name: 'John',
@@ -41,31 +41,32 @@
     $('.reset_filters').click(function() {
       window.customerCollection.reset(customers_data);
       window.filterAgeRange.render();
-      return window.filterCityCollection.collection = originalCollection;
+      return window.filterCityCollection.originalCollection = originalCollection;
     });
     $('.reset_collection').click(function() {
       window.customerCollection.reset(customers_data);
       return window.originalCollection.reset(customers_data);
     });
-    customerCollection = new CustomerCollection;
-    window.customerCollection = customerCollection;
-    customerCollection.reset(customers_data);
-    originalCollection = customerCollection.clone();
-    window.originalCollection = originalCollection;
-    filterCityCollection = new FilterCityCollection(originalCollection);
+    window.customerCollection = new CustomerCollection;
+    window.customerCollection.reset(customers_data);
+    window.originalCollection = window.customerCollection.clone();
+    filterCityCollection = new FilterCityCollection(window.originalCollection, window.customerCollection);
+    filterCityCollection.customerCollection = window.customerCollection;
     filterCityCollection.reload();
-    window.filterAgeRange = new FilterAgeRange(originalCollection);
+    window.filterAgeRange = new FilterAgeRange(window.originalCollection, window.customerCollection);
     window.filterAgeRange.render();
-    originalCollection.filterByAge = window.filterAgeRange;
-    originalCollection.filterByCity = filterCityCollection;
+    window.originalCollection.filterByAge = window.filterAgeRange;
+    window.originalCollection.filterByCity = filterCityCollection;
     customerCollectionView = new CustomerCollectionView({
-      collection: customerCollection,
+      collection: window.customerCollection,
       el: $('ul.customers')[0]
     });
     add_view = new AddView({
       el: $("#add_container"),
-      collection: customerCollection
+      collection: window.customerCollection
     });
+    add_view.originalCollection = window.originalCollection;
+    add_view.render();
     filterCityCollectionView = new FilterCityCollectionView({
       collection: filterCityCollection,
       el: $('ul.filter_cities')[0]

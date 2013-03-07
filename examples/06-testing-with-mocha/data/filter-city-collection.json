@@ -1,0 +1,26 @@
+[
+    {
+        "name": "London",
+        "checked": true,
+    },
+    {
+        "name": "Athens",
+        "checked": true,
+    },
+    {
+        "name": "Paris",
+        "checked": false,
+    },
+    {
+        "name": "New York",
+        "checked": false,
+    },
+    {
+        "name": "Berlin",
+        "checked": false,
+    },
+    {
+        "name": "Porto",
+        "checked": false,
+    }
+]

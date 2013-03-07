@@ -1,7 +1,8 @@
-define ['cs!models/customerCollection'], (CustomerCollection)->
+define ['cs!models/customerCollection',
+		'cs!models/filterCityCollection'], (CustomerCollection, FilterCityCollection)->
 	describe 'Customer Collection', ->
-		before ->
-			customers_data = [
+		beforeEach ->
+			@customers_data = [
 				name : 'John', age : 22, city : 'London',
 			,
 				name: "Tim", age: 5, city : 'Paris',
@@ -18,13 +19,23 @@ define ['cs!models/customerCollection'], (CustomerCollection)->
 			,
 				name: "Rob", age: 55, city : 'Berlin'
 			]
-			@customerCollection = new CustomerCollection customers_data
+			@customerCollection = new CustomerCollection @customers_data
 		after ->
 			@customerCollection.off()
 		describe 'applyFilters', ->
 			it 'filters by age', ()->
 				@customerCollection.filterByAge = {min_age: 5, max_age: 15}
 				expect(@customerCollection.applyFilters().length).to.be.eq(2)
+			it 'filters by city', ()->
+				originalCollection = new CustomerCollection @customers_data
+				filterCityCollection = new FilterCityCollection(originalCollection, @customerCollection)
+				filterCityCollection.reload()
+				_.each(filterCityCollection.models, (model) =>
+					model.set('checked', false)
+				)
+				filterCityCollection.models[1].set('checked', true)
+				originalCollection.filterByCity = filterCityCollection
+				expect(originalCollection.applyFilters().length).to.be.eq(1)
 		describe 'onCollectionChange', ->
 			it 'triggers collection change', ()->
 				called = false

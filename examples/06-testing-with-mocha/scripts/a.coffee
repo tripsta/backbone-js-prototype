@@ -28,34 +28,35 @@ define [
     $('.reset_filters').click ->
       window.customerCollection.reset(customers_data)
       window.filterAgeRange.render()
-      window.filterCityCollection.collection = originalCollection
+      window.filterCityCollection.originalCollection = originalCollection
 
     $('.reset_collection').click ->
       window.customerCollection.reset(customers_data)
       window.originalCollection.reset(customers_data)
 
+    window.customerCollection = new CustomerCollection
+    window.customerCollection.reset(customers_data)
+    window.originalCollection = window.customerCollection.clone()
 
-    customerCollection = new CustomerCollection
-    window.customerCollection = customerCollection
-    customerCollection.reset(customers_data)
-    originalCollection = customerCollection.clone()
-    window.originalCollection = originalCollection
-    filterCityCollection = new FilterCityCollection(originalCollection)
+    filterCityCollection = new FilterCityCollection(window.originalCollection, window.customerCollection)
+    filterCityCollection.customerCollection = window.customerCollection
     filterCityCollection.reload()
-    window.filterAgeRange = new FilterAgeRange(originalCollection)
+    window.filterAgeRange = new FilterAgeRange(window.originalCollection, window.customerCollection)
     window.filterAgeRange.render()
 
-    originalCollection.filterByAge = window.filterAgeRange
-    originalCollection.filterByCity = filterCityCollection
+    window.originalCollection.filterByAge = window.filterAgeRange
+    window.originalCollection.filterByCity = filterCityCollection
     customerCollectionView = new CustomerCollectionView(
-      collection : customerCollection
+      collection : window.customerCollection
       el : $('ul.customers')[0]
     )
 
     add_view = new AddView(
       el: $("#add_container")
-      collection : customerCollection
+      collection : window.customerCollection
     )
+    add_view.originalCollection = window.originalCollection
+    add_view.render()
 
     filterCityCollectionView = new FilterCityCollectionView(
       collection : filterCityCollection
