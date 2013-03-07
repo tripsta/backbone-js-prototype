@@ -1,31 +1,34 @@
 define ->
-  CustomerCollection = Backbone.Collection.extend(
-    initialize: ->
-      @on 'reset', @onCollectionChanged, this
-      @on 'remove', @onCollectionChanged, this
-      @on 'add', @onCollectionChanged, this
+  class CustomerCollection extends Backbone.Collection
+
     filterByAge: null
     filterByCity: null
-    deepClone: ->
-      clonedCollection = new Backbone.Collection()
-      @each (customer)->
-        clonedCollection.add(new Backbone.Model(customer.toJSON()))
-      clonedCollection
+
+    initialize: ->
+      @on 'reset remove add', @onCollectionChanged, @
+
+    deepClone: -> new Backbone.Collection(@toJSON())
+
     applyFilters: ->
-      currentCollection = @deepClone()
-      filtered = currentCollection.models
-      if (@filterByAge) 
-        filtered = currentCollection.filter((model)=>
+      filtered = @models
+
+      if @filterByAge
+        filtered = _(filtered).filter (model) =>
           @filterByAge.min_age <= model.get('age') <= @filterByAge.max_age
-        )
-      currentCollection.reset filtered
-      if (@filterByCity)
-        cities = _.map(@filterByCity.filter((model) ->
-          model.get('checked') is true), (m) -> m.get('name'))
-        filtered = currentCollection.filter (model) ->
+
+      if @filterByCity
+        cities = _(@filterByCity.toJSON())
+          .chain()
+          .filter((m) -> m.checked)
+          .pluck('name')
+          .value()
+
+        filtered = _(filtered).filter (model) ->
           (_.contains(cities, model.get('city')))
+
       filtered
+
     onCollectionChanged: ->
-      @trigger 'customer_collection::onCollectionChanged', this
-  )
+      @trigger 'customer_collection::onCollectionChanged', @
+
   CustomerCollection
