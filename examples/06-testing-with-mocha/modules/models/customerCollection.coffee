@@ -1,3 +1,4 @@
+console.log 'CustomerCollection loaded'
 define ->
   class CustomerCollection extends Backbone.Collection
 
